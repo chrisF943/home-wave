@@ -2,6 +2,13 @@ import AppKit
 import HomeWaveCore
 import WebKit
 
+// The webview covers the full window (including the transparent titlebar),
+// which swallows every click — this invisible strip gives the top edge back
+// to the window server so the window can be dragged.
+final class WindowDragStrip: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate {
     var window: NSWindow!
     var webView: WKWebView!
@@ -29,6 +36,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         webView.navigationDelegate = self
         webView.autoresizingMask = [.width, .height]
         window.contentView!.addSubview(webView)
+
+        // Top 28px acts as the drag handle, stopping 70px short of the right
+        // edge so the settings gear underneath stays clickable.
+        let contentBounds = window.contentView!.bounds
+        let dragStrip = WindowDragStrip(frame: NSRect(
+            x: 0, y: contentBounds.height - 28,
+            width: contentBounds.width - 70, height: 28))
+        dragStrip.autoresizingMask = [.width, .minYMargin]
+        window.contentView!.addSubview(dragStrip, positioned: .above, relativeTo: webView)
 
         let dir = webDirectoryURL()
         webView.loadFileURL(dir.appendingPathComponent("index.html"), allowingReadAccessTo: dir)
