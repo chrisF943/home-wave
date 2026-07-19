@@ -3,10 +3,19 @@ import HomeWaveCore
 import WebKit
 
 // The webview covers the full window (including the transparent titlebar),
-// which swallows every click — this invisible strip gives the top edge back
-// to the window server so the window can be dragged.
+// which swallows every click — this invisible strip drives the window drag
+// itself so the top edge behaves like a titlebar again.
 final class WindowDragStrip: NSView {
     override var mouseDownCanMoveWindow: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 2 {
+            window?.zoom(nil)
+        } else {
+            window?.performDrag(with: event)
+        }
+    }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate {
@@ -57,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     // Start feeds only once the page is ready to receive them.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         engine.onStatus = { [weak self] status in
+            NSLog("audio status: %@", status)
             self?.push("window.homewave && window.homewave.onAudioStatus('\(status)')")
         }
         engine.onFrame = { [weak self] frame in self?.pushFrame(frame) }
