@@ -1,6 +1,6 @@
 import { patterns } from './patterns/index.js';
 import { Settings, bindPanel } from './settings.js';
-import { ThemeEngine, manualTheme } from './palette.js';
+import { ThemeEngine, manualTheme, extractPalette, deriveTheme } from './palette.js';
 
 const canvas = document.getElementById('viz');
 const settings = new Settings();
@@ -43,10 +43,25 @@ function updateChip(evt) {
   }
 }
 
+function loadArtTheme(artDataURL) {
+  const img = new Image();
+  img.onload = () => {
+    const size = 64;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    const pixels = ctx.getImageData(0, 0, size, size).data;
+    artTheme = deriveTheme(extractPalette(pixels, 5));
+  };
+  img.src = artDataURL;
+}
+
 window.homewave = {
   onAudioFrame(frame) { latestFrame = frame; },
   onTrack(evt) {
     updateChip(evt);
+    if (evt.artDataURL) loadArtTheme(evt.artDataURL);
   },
   onAudioStatus(status) {
     document.getElementById('permission-overlay')
