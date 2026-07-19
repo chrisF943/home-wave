@@ -11,7 +11,10 @@ public final class AudioEngine {
 
     public init() {}
 
+    /// Must be called on the main thread: the 60Hz analysis timer is
+    /// scheduled on the caller's run loop, and `onFrame` fires there.
     public func start() {
+        dispatchPrecondition(condition: .onQueue(.main))
         stop()
         do {
             tap.onSamples = { [buffer] samples in buffer.write(samples) }

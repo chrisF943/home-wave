@@ -1,9 +1,11 @@
-import Foundation
+import os
 
 final class RingBuffer {
     private var storage: [Float]
     private var writeIndex = 0
-    private let lock = NSLock()
+    // Unfair lock donates priority to the holder — safe to take on the
+    // realtime Core Audio IOProc thread without inversion risk.
+    private let lock = OSAllocatedUnfairLock()
 
     init(capacity: Int) {
         storage = [Float](repeating: 0, count: capacity)
