@@ -20,6 +20,7 @@ func checkGreater(_ a: Float, _ b: Float, _ label: String) {
 }
 
 runSpectrumAnalyzerChecks()
+runSpotifyParsingChecks()
 
 if failures > 0 {
     print("\(failures) check(s) FAILED")

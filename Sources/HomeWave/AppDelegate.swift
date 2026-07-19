@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     let engine = AudioEngine()
     private var frameCount = 0
+    var spotifyRef: SpotifyWatcher?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         window = NSWindow(
@@ -27,6 +28,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         engine.start()
+
+        let spotify = SpotifyWatcher()
+        spotify.onTrack = { info, art in
+            NSLog("track: %@ — %@ (playing=%@) art=%@", info.artist, info.title,
+                  info.playing ? "Y" : "n", art == nil ? "none" : "\(art!.count) chars")
+        }
+        spotify.start()
+        self.spotifyRef = spotify
     }
 
     func applicationWillTerminate(_ notification: Notification) { engine.stop() }
