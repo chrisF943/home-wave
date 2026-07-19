@@ -1947,8 +1947,8 @@ git commit -m "feat: impeccable design pass on visualizer UI"
 
 - [ ] **Step 1: Full automated test suite**
 
-Run: `swift run HomeWaveChecks && node --test web/tests/`
-Expected: all PASS (checks exit 0, node tests green).
+Run: `swift run HomeWaveChecks && node --test web/tests/*.test.js`
+Expected: all PASS (checks exit 0, node tests green). (Node 24 mishandles bare directory args to `--test` — pass the files explicitly.)
 
 - [ ] **Step 2: Clean-build the bundle**
 
