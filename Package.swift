@@ -11,6 +11,6 @@ let package = Package(
             dependencies: ["HomeWaveCore"],
             exclude: ["Info.plist"]
         ),
-        .testTarget(name: "HomeWaveCoreTests", dependencies: ["HomeWaveCore"]),
+        .executableTarget(name: "HomeWaveChecks", dependencies: ["HomeWaveCore"]),
     ]
 )
