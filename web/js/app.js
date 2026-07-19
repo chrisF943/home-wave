@@ -78,6 +78,31 @@ document.getElementById('retry-audio')
 document.getElementById('open-settings')
   .addEventListener('click', () => sendCommand('openSystemSettings'));
 
+// Chrome recedes after 4s without input; the settings panel pins it visible.
+let idleTimer = null;
+function resetIdle() {
+  document.body.classList.remove('ui-idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (document.getElementById('settings-panel').classList.contains('hidden')) {
+      document.body.classList.add('ui-idle');
+    }
+  }, 4000);
+}
+for (const evt of ['mousemove', 'mousedown', 'keydown']) {
+  addEventListener(evt, resetIdle, { passive: true });
+}
+resetIdle();
+
+// Feed the live theme's lead color to the chrome so the UI chameleons too.
+let lastAccent = '';
+function syncAccent(theme) {
+  const accent = `rgb(${theme.colors[0].join(',')})`;
+  if (accent === lastAccent) return;
+  lastAccent = accent;
+  document.documentElement.style.setProperty('--accent', accent);
+}
+
 const sel = document.getElementById('set-pattern');
 for (const p of patterns) {
   const opt = document.createElement('option');
@@ -92,7 +117,9 @@ function loop(tMs) {
   fitCanvas(canvas);
   const target = settings.values.chameleon && artTheme ? artTheme : manualTheme(settings.values);
   themes.setTargetIfChanged(target, tMs);
-  pattern.render(latestFrame, themes.current(tMs), settings.values, tMs);
+  const theme = themes.current(tMs);
+  syncAccent(theme);
+  pattern.render(latestFrame, theme, settings.values, tMs);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

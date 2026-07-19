@@ -26,6 +26,11 @@ export function bindPanel(settings, { onPattern }) {
   const panel = document.getElementById('settings-panel');
   document.getElementById('settings-toggle')
     .addEventListener('click', () => panel.classList.toggle('hidden'));
+  document.addEventListener('mousedown', (e) => {
+    if (panel.classList.contains('hidden')) return;
+    if (panel.contains(e.target) || e.target.closest('#settings-toggle')) return;
+    panel.classList.add('hidden');
+  });
 
   const patternSel = document.getElementById('set-pattern');
   patternSel.value = settings.values.pattern;
@@ -35,8 +40,14 @@ export function bindPanel(settings, { onPattern }) {
   });
 
   const chameleon = document.getElementById('set-chameleon');
+  const manualColors = document.getElementById('manual-colors');
+  const syncManual = () => manualColors.classList.toggle('is-disabled', chameleon.checked);
   chameleon.checked = settings.values.chameleon;
-  chameleon.addEventListener('change', () => settings.set('chameleon', chameleon.checked));
+  syncManual();
+  chameleon.addEventListener('change', () => {
+    settings.set('chameleon', chameleon.checked);
+    syncManual();
+  });
 
   settings.values.colors.forEach((hex, i) => {
     const input = document.getElementById(`set-color-${i}`);

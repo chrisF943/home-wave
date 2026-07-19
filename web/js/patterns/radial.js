@@ -27,20 +27,26 @@ export default {
     const maxLen = Math.min(w, h) * 0.30;
     const n = frame.bands.length;
     ctx.lineCap = 'round';
+    // Mirror the spectrum: bass at the rotation pole sweeping to highs at the
+    // opposite pole, duplicated left/right so the bloom reacts symmetrically
+    // instead of concentrating all the energy on the bass arc.
     for (let i = 0; i < n; i++) {
       const v = Math.min(1, frame.bands[i] * settings.sensitivity);
-      const angle = this.rotation + (i / n) * Math.PI * 2;
+      const frac = i / (n - 1);
       const len = 4 + v * maxLen;
-      const pos = i / (n - 1) * (theme.colors.length - 1);
+      const pos = frac * (theme.colors.length - 1);
       const c = lerpRgb(theme.colors[Math.floor(pos)],
                         theme.colors[Math.min(theme.colors.length - 1, Math.ceil(pos))],
                         pos % 1);
       ctx.strokeStyle = rgba(c, 0.9);
       ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(angle) * r0, cy + Math.sin(angle) * r0);
-      ctx.lineTo(cx + Math.cos(angle) * (r0 + len), cy + Math.sin(angle) * (r0 + len));
-      ctx.stroke();
+      for (const side of [1, -1]) {
+        const angle = this.rotation + side * frac * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * r0, cy + Math.sin(angle) * r0);
+        ctx.lineTo(cx + Math.cos(angle) * (r0 + len), cy + Math.sin(angle) * (r0 + len));
+        ctx.stroke();
+      }
     }
     ctx.strokeStyle = rgba(theme.colors[0], 0.35 + this.pulse * 0.5);
     ctx.lineWidth = 1.5;

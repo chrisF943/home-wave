@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark">
 <title>HomeWave</title>
 <link rel="stylesheet" href="css/main.css">
 </head>
@@ -16,18 +17,33 @@
   </div>
 </div>
 
-<button id="settings-toggle" aria-label="Settings">⚙</button>
+<button id="settings-toggle" aria-label="Settings">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
 
 <aside id="settings-panel" class="hidden">
   <h2>Settings</h2>
-  <label>Pattern <select id="set-pattern"></select></label>
-  <label><input type="checkbox" id="set-chameleon"> Album-art colors</label>
-  <label>Color 1 <input type="color" id="set-color-0"></label>
-  <label>Color 2 <input type="color" id="set-color-1"></label>
-  <label>Color 3 <input type="color" id="set-color-2"></label>
-  <label>Background <input type="color" id="set-background"></label>
-  <label>Sensitivity <input type="range" id="set-sensitivity" min="0.4" max="2.5" step="0.05"></label>
-  <label>Speed <input type="range" id="set-speed" min="0.3" max="2.5" step="0.05"></label>
+  <div class="group">
+    <label class="field">Pattern <select id="set-pattern"></select></label>
+  </div>
+  <div class="group">
+    <h3>Colors</h3>
+    <label class="field">Album-art colors <input type="checkbox" id="set-chameleon"></label>
+    <div id="manual-colors">
+      <label class="field">Color 1 <input type="color" id="set-color-0"></label>
+      <label class="field">Color 2 <input type="color" id="set-color-1"></label>
+      <label class="field">Color 3 <input type="color" id="set-color-2"></label>
+      <label class="field">Background <input type="color" id="set-background"></label>
+    </div>
+  </div>
+  <div class="group">
+    <h3>Motion</h3>
+    <label class="field">Sensitivity <input type="range" id="set-sensitivity" min="0.4" max="2.5" step="0.05"></label>
+    <label class="field">Speed <input type="range" id="set-speed" min="0.3" max="2.5" step="0.05"></label>
+  </div>
 </aside>
 
 <div id="permission-overlay" class="overlay hidden">
@@ -36,8 +52,10 @@
     <p>macOS blocks system-audio capture until you allow it. Enable HomeWave under
        System Settings → Privacy &amp; Security → Screen &amp; System Audio Recording,
        then retry.</p>
-    <button id="open-settings">Open System Settings</button>
-    <button id="retry-audio">Retry</button>
+    <div class="actions">
+      <button id="retry-audio" class="btn btn-secondary">Retry</button>
+      <button id="open-settings" class="btn btn-primary">Open System Settings</button>
+    </div>
   </div>
 </div>
 
