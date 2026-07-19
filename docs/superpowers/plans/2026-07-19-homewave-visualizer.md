@@ -1654,9 +1654,13 @@ Edit 2 — replace the `onTrack` handler inside `window.homewave`:
 Edit 3 — add below `updateChip`:
 
 ```js
+let artLoadSeq = 0;
+
 function loadArtTheme(artDataURL) {
+  const seq = ++artLoadSeq;
   const img = new Image();
   img.onload = () => {
+    if (seq !== artLoadSeq) return; // a newer track's art superseded this load
     const size = 64;
     const c = document.createElement('canvas');
     c.width = c.height = size;
