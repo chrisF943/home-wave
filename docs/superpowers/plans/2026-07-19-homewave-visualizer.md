@@ -462,12 +462,14 @@ Hardware capture can't be unit-tested; this task is verified manually with real 
 - [ ] **Step 1: Write `Sources/HomeWaveCore/RingBuffer.swift`**
 
 ```swift
-import Foundation
+import os
 
 final class RingBuffer {
     private var storage: [Float]
     private var writeIndex = 0
-    private let lock = NSLock()
+    // Unfair lock donates priority to the holder — safe to take on the
+    // realtime Core Audio IOProc thread without inversion risk.
+    private let lock = OSAllocatedUnfairLock()
 
     init(capacity: Int) {
         storage = [Float](repeating: 0, count: capacity)
@@ -639,7 +641,10 @@ public final class AudioEngine {
 
     public init() {}
 
+    /// Must be called on the main thread: the 60Hz analysis timer is
+    /// scheduled on the caller's run loop, and `onFrame` fires there.
     public func start() {
+        dispatchPrecondition(condition: .onQueue(.main))
         stop()
         do {
             tap.onSamples = { [buffer] samples in buffer.write(samples) }
