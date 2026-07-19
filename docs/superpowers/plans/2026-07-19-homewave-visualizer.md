@@ -857,6 +857,9 @@ public final class SpotifyWatcher {
                 self.cachedArtDataURL = nil
                 self.fetchArtwork { [weak self] dataURL in
                     guard let self else { return }
+                    // A rapid skip can start a newer fetch before this one
+                    // returns — drop the stale result.
+                    guard info.id == self.lastTrackID else { return }
                     self.cachedArtDataURL = dataURL
                     self.onTrack?(info, dataURL)
                 }
