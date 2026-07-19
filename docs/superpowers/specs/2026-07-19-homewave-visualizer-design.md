@@ -90,7 +90,7 @@ No node build step — plain ES modules served from the bundle. This keeps the t
 
 ## Testing
 
-- **Swift unit tests:** FFT binning against synthetic sine waves (energy lands in the expected band); notification userInfo parsing; artwork-URL AppleScript result handling (mocked).
+- **Swift checks:** plain-assert executable run via `swift run HomeWaveChecks` (the dev machine has no Xcode, so XCTest is unavailable). Covers FFT binning against synthetic sine waves (energy lands in the expected band) and notification userInfo parsing; the AppleScript artwork path is covered by manual end-to-end verification.
 - **JS tests:** palette extraction against known fixture images; pattern interface conformance.
 - **Dev harness:** manual and impeccable-driven iteration on patterns/UI with synthetic audio in a browser.
 - **Manual end-to-end:** Spotify playing → permission prompts → visuals react → track change re-themes.

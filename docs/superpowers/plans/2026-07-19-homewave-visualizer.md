@@ -6,12 +6,13 @@
 
 **Architecture:** Swift/AppKit host (SPM: `HomeWaveCore` library + `HomeWave` executable) captures system audio via a Core Audio process tap, runs FFT with Accelerate, and watches Spotify's distributed notifications. It pushes JSON audio frames (~60fps) and track events into a WKWebView. The frontend is vanilla-JS ES modules rendering with Canvas 2D; a dev harness page drives it with synthetic audio so all frontend work is testable in a plain browser.
 
-**Tech Stack:** Swift 6 toolchain (language mode 5 via tools-version 5.9), SPM, CoreAudio process tap, Accelerate/vDSP, WKWebView, NSAppleScript, vanilla JS ES modules, Canvas 2D, XCTest, `node --test`.
+**Tech Stack:** Swift 6 toolchain (language mode 5 via tools-version 5.9), SPM, CoreAudio process tap, Accelerate/vDSP, WKWebView, NSAppleScript, vanilla JS ES modules, Canvas 2D, plain-assert Swift checks executable, `node --test`.
 
 ## Global Constraints
 
 - macOS floor: **14.2** — `platforms: [.macOS("14.2")]` in Package.swift (process-tap API floor; dev machine runs macOS 26.5).
 - Swift: `// swift-tools-version: 5.9`, **zero external Swift dependencies**.
+- Swift checks: this machine has **no Xcode** — XCTest and swift-testing are unavailable. Swift tests live in a plain-assert executable target `HomeWaveChecks`; run with `swift run HomeWaveChecks` (exit 0 = all pass). Never `import XCTest` or `import Testing` anywhere.
 - Frontend: vanilla ES modules only, **no build step, no npm dependencies**. Node used solely to run `node --test web/tests/`.
 - Bundle ID: `com.homewave.app`. Ad-hoc codesign (`codesign --force --sign -`). Not sandboxed, not notarized.
 - The app MUST be run as a bundled `.app` (via `scripts/bundle.sh` then `open build/HomeWave.app`) for TCC permission prompts to attribute correctly. `swift run` will not prompt properly.
@@ -36,13 +37,14 @@ HomeWave/
 │   │   ├── TrackInfo.swift
 │   │   ├── SpotifyNotificationParser.swift
 │   │   └── SpotifyWatcher.swift          # distributed notifications + artwork fetch
-│   └── HomeWave/                         # thin executable
-│       ├── main.swift
-│       ├── AppDelegate.swift             # window + WKWebView + bridge
-│       └── Info.plist                    # copied into bundle by bundle.sh
-├── Tests/HomeWaveCoreTests/
-│   ├── SpectrumAnalyzerTests.swift
-│   └── SpotifyParsingTests.swift
+│   ├── HomeWave/                         # thin executable
+│   │   ├── main.swift
+│   │   ├── AppDelegate.swift             # window + WKWebView + bridge
+│   │   └── Info.plist                    # copied into bundle by bundle.sh
+│   └── HomeWaveChecks/                   # plain-assert checks (no Xcode → no XCTest on this machine)
+│       ├── main.swift                    # harness: check() helpers, exit 1 on any failure
+│       ├── SpectrumAnalyzerChecks.swift
+│       └── SpotifyParsingChecks.swift    # added in Task 4
 └── web/
     ├── package.json                      # {"type": "module"} so node --test works
     ├── index.html
@@ -241,51 +243,109 @@ git commit -m "feat: scaffold HomeWave SPM app with bundle script"
 
 **Files:**
 - Create: `Sources/HomeWaveCore/SpectrumAnalyzer.swift`
-- Test: `Tests/HomeWaveCoreTests/SpectrumAnalyzerTests.swift`
+- Create: `Sources/HomeWaveChecks/main.swift` (checks harness)
+- Create: `Sources/HomeWaveChecks/SpectrumAnalyzerChecks.swift`
+- Modify: `Package.swift` (swap the test target for the `HomeWaveChecks` executable target)
+- Delete: `Tests/` (placeholder XCTest target — XCTest is unavailable without Xcode)
 
 **Interfaces:**
 - Consumes: `AudioFrame` from Task 1.
 - Produces: `public final class SpectrumAnalyzer` — `init(sampleRate: Float)`, `func analyze(_ samples: [Float]) -> AudioFrame` (requires exactly `SpectrumAnalyzer.fftSize` samples), `static let fftSize = 2048`, `static let bandCount = 64`. Task 3's AudioEngine calls this.
+- Produces: checks harness — `check(_ condition: Bool, _ label: String)`, `checkLess(_ a: Float, _ b: Float, _ label: String)`, `checkGreater(_ a: Float, _ b: Float, _ label: String)` in `Sources/HomeWaveChecks/main.swift`. Task 4 adds its own checks file to this target and a `runSpotifyParsingChecks()` call to main.swift.
 
-- [ ] **Step 1: Write the failing tests** — `Tests/HomeWaveCoreTests/SpectrumAnalyzerTests.swift`
+- [ ] **Step 1: Replace the test target with the checks target in `Package.swift`**
+
+Full new contents:
 
 ```swift
-import XCTest
-@testable import HomeWaveCore
+// swift-tools-version: 5.9
+import PackageDescription
 
-final class SpectrumAnalyzerTests: XCTestCase {
-    private func sine(freq: Float, sampleRate: Float, count: Int, amp: Float = 0.5) -> [Float] {
-        (0..<count).map { amp * sin(2 * .pi * freq * Float($0) / sampleRate) }
-    }
+let package = Package(
+    name: "HomeWave",
+    platforms: [.macOS("14.2")],
+    targets: [
+        .target(name: "HomeWaveCore"),
+        .executableTarget(
+            name: "HomeWave",
+            dependencies: ["HomeWaveCore"],
+            exclude: ["Info.plist"]
+        ),
+        .executableTarget(name: "HomeWaveChecks", dependencies: ["HomeWaveCore"]),
+    ]
+)
+```
 
-    func testSinePeaksInExpectedBand() {
-        let sr: Float = 48_000
-        let analyzer = SpectrumAnalyzer(sampleRate: sr)
-        let frame = analyzer.analyze(sine(freq: 1_000, sampleRate: sr, count: SpectrumAnalyzer.fftSize))
-        // Bands are log-spaced 40 Hz – 16 kHz over 64 bands:
-        // band(1 kHz) = 64 * ln(1000/40) / ln(16000/40) ≈ 34
-        let maxBand = frame.bands.firstIndex(of: frame.bands.max()!)!
-        XCTAssertTrue((32...36).contains(maxBand), "peak landed in band \(maxBand)")
-        XCTAssertGreaterThan(frame.level, 0.5)
-    }
+Then delete the `Tests/` directory (`git rm -r Tests` if tracked).
 
-    func testSilenceIsQuiet() {
-        let analyzer = SpectrumAnalyzer(sampleRate: 48_000)
-        let frame = analyzer.analyze([Float](repeating: 0, count: SpectrumAnalyzer.fftSize))
-        XCTAssertLessThan(frame.level, 0.01)
-        XCTAssertLessThan(frame.bands.max()!, 0.01)
-        XCTAssertFalse(frame.beat)
-        XCTAssertEqual(frame.bands.count, SpectrumAnalyzer.bandCount)
+- [ ] **Step 2: Write the failing checks (RED)**
+
+`Sources/HomeWaveChecks/main.swift`:
+
+```swift
+import Foundation
+
+var failures = 0
+
+func check(_ condition: Bool, _ label: String) {
+    if condition {
+        print("PASS: \(label)")
+    } else {
+        failures += 1
+        print("FAIL: \(label)")
     }
+}
+
+func checkLess(_ a: Float, _ b: Float, _ label: String) {
+    check(a < b, "\(label) (\(a) < \(b))")
+}
+
+func checkGreater(_ a: Float, _ b: Float, _ label: String) {
+    check(a > b, "\(label) (\(a) > \(b))")
+}
+
+runSpectrumAnalyzerChecks()
+
+if failures > 0 {
+    print("\(failures) check(s) FAILED")
+    exit(1)
+}
+print("All checks passed")
+```
+
+`Sources/HomeWaveChecks/SpectrumAnalyzerChecks.swift`:
+
+```swift
+import Foundation
+import HomeWaveCore
+
+private func sine(freq: Float, sampleRate: Float, count: Int, amp: Float = 0.5) -> [Float] {
+    (0..<count).map { amp * sin(2 * .pi * freq * Float($0) / sampleRate) }
+}
+
+func runSpectrumAnalyzerChecks() {
+    // Bands are log-spaced 40 Hz – 16 kHz over 64 bands:
+    // band(1 kHz) = 64 * ln(1000/40) / ln(16000/40) ≈ 34
+    let sr: Float = 48_000
+    let analyzer = SpectrumAnalyzer(sampleRate: sr)
+    let frame = analyzer.analyze(sine(freq: 1_000, sampleRate: sr, count: SpectrumAnalyzer.fftSize))
+    let maxBand = frame.bands.firstIndex(of: frame.bands.max()!)!
+    check((32...36).contains(maxBand), "1 kHz sine peaks in band 32...36 (got \(maxBand))")
+    checkGreater(frame.level, 0.5, "sine level is loud")
+
+    let quiet = SpectrumAnalyzer(sampleRate: 48_000)
+    let silent = quiet.analyze([Float](repeating: 0, count: SpectrumAnalyzer.fftSize))
+    checkLess(silent.level, 0.01, "silence level")
+    checkLess(silent.bands.max()!, 0.01, "silence bands")
+    check(!silent.beat, "silence has no beat")
+    check(silent.bands.count == SpectrumAnalyzer.bandCount, "band count is 64")
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+Run: `swift run HomeWaveChecks`
+Expected: BUILD FAILURE — `cannot find 'SpectrumAnalyzer' in scope`. The checks reference the class before it exists; this build failure is the RED step.
 
-Run: `swift test --filter SpectrumAnalyzerTests`
-Expected: FAIL — `cannot find 'SpectrumAnalyzer' in scope`
-
-- [ ] **Step 3: Write `Sources/HomeWaveCore/SpectrumAnalyzer.swift`**
+- [ ] **Step 3: Write `Sources/HomeWaveCore/SpectrumAnalyzer.swift` (GREEN implementation)**
 
 ```swift
 import Accelerate
@@ -370,15 +430,16 @@ public final class SpectrumAnalyzer {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 4: Run checks to verify they pass**
 
-Run: `swift test --filter SpectrumAnalyzerTests`
-Expected: PASS (2 tests). If `testSinePeaksInExpectedBand` fails on the band index, print `frame.bands` and check the log-spacing math before touching tolerances.
+Run: `swift run HomeWaveChecks`
+Expected: exit 0; six `PASS:` lines ending with `All checks passed`. If the band-index check fails, print `frame.bands` and check the log-spacing math before touching tolerances.
 
-- [ ] **Step 5: Commit** (only if commits re-enabled)
+- [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/HomeWaveCore/SpectrumAnalyzer.swift Tests
+git rm -r Tests
+git add Package.swift Sources
 git commit -m "feat: add FFT spectrum analyzer with beat detection"
 ```
 
@@ -674,47 +735,54 @@ git commit -m "feat: capture system audio via Core Audio process tap"
 - Create: `Sources/HomeWaveCore/TrackInfo.swift`
 - Create: `Sources/HomeWaveCore/SpotifyNotificationParser.swift`
 - Create: `Sources/HomeWaveCore/SpotifyWatcher.swift`
-- Test: `Tests/HomeWaveCoreTests/SpotifyParsingTests.swift`
+- Create: `Sources/HomeWaveChecks/SpotifyParsingChecks.swift`
+- Modify: `Sources/HomeWaveChecks/main.swift` (add `runSpotifyParsingChecks()` call)
 
 **Interfaces:**
 - Produces: `public struct TrackInfo { id, title, artist, album: String; playing: Bool }` (memberwise public init).
 - Produces: `SpotifyNotificationParser.parse(_ userInfo: [AnyHashable: Any]) -> TrackInfo?`.
 - Produces: `public final class SpotifyWatcher` — `init()`, `start()`, `var onTrack: ((TrackInfo, String?) -> Void)?` (second arg = artwork data-URL or nil, fired on main thread). Task 5 consumes this.
 
-- [ ] **Step 1: Write the failing tests** — `Tests/HomeWaveCoreTests/SpotifyParsingTests.swift`
+- [ ] **Step 1: Write the failing checks** — `Sources/HomeWaveChecks/SpotifyParsingChecks.swift`
 
 ```swift
-import XCTest
-@testable import HomeWaveCore
+import Foundation
+import HomeWaveCore
 
-final class SpotifyParsingTests: XCTestCase {
-    func testPlayingNotification() {
-        let info = SpotifyNotificationParser.parse([
-            "Name": "Song", "Artist": "Artist", "Album": "Album",
-            "Player State": "Playing", "Track ID": "spotify:track:abc",
-        ])
-        XCTAssertEqual(info, TrackInfo(id: "spotify:track:abc", title: "Song",
-                                       artist: "Artist", album: "Album", playing: true))
-    }
+func runSpotifyParsingChecks() {
+    let playing = SpotifyNotificationParser.parse([
+        "Name": "Song", "Artist": "Artist", "Album": "Album",
+        "Player State": "Playing", "Track ID": "spotify:track:abc",
+    ])
+    check(playing == TrackInfo(id: "spotify:track:abc", title: "Song",
+                               artist: "Artist", album: "Album", playing: true),
+          "playing notification parsed")
 
-    func testPausedNotification() {
-        let info = SpotifyNotificationParser.parse([
-            "Name": "Song", "Player State": "Paused", "Track ID": "spotify:track:abc",
-        ])
-        XCTAssertEqual(info?.playing, false)
-        XCTAssertEqual(info?.artist, "")
-    }
+    let paused = SpotifyNotificationParser.parse([
+        "Name": "Song", "Player State": "Paused", "Track ID": "spotify:track:abc",
+    ])
+    check(paused?.playing == false, "paused state parsed")
+    check(paused?.artist == "", "missing artist defaults to empty")
 
-    func testMissingPlayerStateReturnsNil() {
-        XCTAssertNil(SpotifyNotificationParser.parse(["Name": "x"]))
-    }
+    check(SpotifyNotificationParser.parse(["Name": "x"]) == nil,
+          "missing player state returns nil")
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+And in `Sources/HomeWaveChecks/main.swift`, add the call after the analyzer checks:
 
-Run: `swift test --filter SpotifyParsingTests`
-Expected: FAIL — `cannot find 'SpotifyNotificationParser' in scope`
+```swift
+// old
+runSpectrumAnalyzerChecks()
+// new
+runSpectrumAnalyzerChecks()
+runSpotifyParsingChecks()
+```
+
+- [ ] **Step 2: Run checks to verify they fail (RED)**
+
+Run: `swift run HomeWaveChecks`
+Expected: BUILD FAILURE — `cannot find 'SpotifyNotificationParser' in scope`
 
 - [ ] **Step 3: Write `Sources/HomeWaveCore/TrackInfo.swift`**
 
@@ -752,10 +820,10 @@ public enum SpotifyNotificationParser {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [ ] **Step 5: Run checks to verify they pass**
 
-Run: `swift test --filter SpotifyParsingTests`
-Expected: PASS (3 tests)
+Run: `swift run HomeWaveChecks`
+Expected: exit 0; the six analyzer checks plus four new parser checks all `PASS:`, ending `All checks passed`
 
 - [ ] **Step 6: Write `Sources/HomeWaveCore/SpotifyWatcher.swift`**
 
@@ -836,7 +904,7 @@ Expected:
 - [ ] **Step 8: Commit** (only if commits re-enabled)
 
 ```bash
-git add Sources Tests
+git add Sources
 git commit -m "feat: add Spotify track watcher with artwork fetch"
 ```
 
@@ -1871,8 +1939,8 @@ git commit -m "feat: impeccable design pass on visualizer UI"
 
 - [ ] **Step 1: Full automated test suite**
 
-Run: `swift test && node --test web/tests/`
-Expected: all PASS.
+Run: `swift run HomeWaveChecks && node --test web/tests/`
+Expected: all PASS (checks exit 0, node tests green).
 
 - [ ] **Step 2: Clean-build the bundle**
 
