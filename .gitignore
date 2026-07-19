@@ -1,4 +1,6 @@
 .superpowers/
+.claude/
+.claudeignore
 .build/
 build/
 .DS_Store
