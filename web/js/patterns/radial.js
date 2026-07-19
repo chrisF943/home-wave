@@ -40,7 +40,9 @@ export default {
                         pos % 1);
       ctx.strokeStyle = rgba(c, 0.9);
       ctx.lineWidth = 3;
-      for (const side of [1, -1]) {
+      // Poles (first/last band) land on the same angle from both sides —
+      // draw them once to avoid a double-bright seam.
+      for (const side of (i === 0 || i === n - 1) ? [1] : [1, -1]) {
         const angle = this.rotation + side * frac * Math.PI;
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(angle) * r0, cy + Math.sin(angle) * r0);

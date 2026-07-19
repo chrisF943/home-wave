@@ -4,7 +4,7 @@
   --accent: #ff5470; /* fed live from the active theme by app.js */
   --ink: rgba(255, 255, 255, 0.92);
   --ink-2: rgba(255, 255, 255, 0.64);
-  --glass: rgba(16, 16, 22, 0.68);
+  --glass: rgba(16, 16, 22, 0.78);
   --glass-2: rgba(21, 21, 29, 0.86);
   --line: rgba(255, 255, 255, 0.09);
   --line-2: rgba(255, 255, 255, 0.17);
@@ -34,10 +34,17 @@ body {
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* UI recedes when the mouse goes quiet — the visuals are the product. */
+/* UI recedes when the mouse goes quiet — the visuals are the product.
+   visibility drops the faded controls from the tab order and AX tree,
+   delayed so the opacity fade plays out first. */
 .ui-idle { cursor: none; }
 .ui-idle .chip,
-.ui-idle #settings-toggle { opacity: 0; pointer-events: none; }
+.ui-idle #settings-toggle {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--t-slow) var(--ease), visibility 0s linear var(--t-slow);
+}
 
 /* ------------------------------------------------------------------ chip */
 .chip {
@@ -49,7 +56,7 @@ body {
   border-radius: var(--r-m);
   backdrop-filter: blur(20px) saturate(1.4);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-  transition: opacity var(--t-slow) var(--ease);
+  transition: opacity var(--t-slow) var(--ease), visibility 0s linear 0s;
 }
 .chip img { width: 40px; height: 40px; border-radius: var(--r-s); display: block; }
 .chip > div { max-width: 240px; }
@@ -73,6 +80,7 @@ body {
   cursor: pointer;
   backdrop-filter: blur(20px) saturate(1.4);
   transition: opacity var(--t-slow) var(--ease),
+              visibility 0s linear 0s,
               background var(--t-fast) var(--ease),
               color var(--t-fast) var(--ease),
               transform var(--t-fast) var(--ease);
