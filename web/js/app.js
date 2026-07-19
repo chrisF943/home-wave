@@ -43,9 +43,13 @@ function updateChip(evt) {
   }
 }
 
+let artLoadSeq = 0;
+
 function loadArtTheme(artDataURL) {
+  const seq = ++artLoadSeq;
   const img = new Image();
   img.onload = () => {
+    if (seq !== artLoadSeq) return; // a newer track's art superseded this load
     const size = 64;
     const c = document.createElement('canvas');
     c.width = c.height = size;
