@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HomeWave</title>
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<canvas id="viz"></canvas>
+
+<div id="now-playing" class="chip hidden">
+  <img id="np-art" alt="">
+  <div>
+    <div id="np-title"></div>
+    <div id="np-artist"></div>
+  </div>
+</div>
+
+<button id="settings-toggle" aria-label="Settings">⚙</button>
+
+<aside id="settings-panel" class="hidden">
+  <h2>Settings</h2>
+  <label>Pattern <select id="set-pattern"></select></label>
+  <label><input type="checkbox" id="set-chameleon"> Album-art colors</label>
+  <label>Color 1 <input type="color" id="set-color-0"></label>
+  <label>Color 2 <input type="color" id="set-color-1"></label>
+  <label>Color 3 <input type="color" id="set-color-2"></label>
+  <label>Background <input type="color" id="set-background"></label>
+  <label>Sensitivity <input type="range" id="set-sensitivity" min="0.4" max="2.5" step="0.05"></label>
+  <label>Speed <input type="range" id="set-speed" min="0.3" max="2.5" step="0.05"></label>
+</aside>
+
+<div id="permission-overlay" class="overlay hidden">
+  <div class="overlay-card">
+    <h1>HomeWave needs audio access</h1>
+    <p>macOS blocks system-audio capture until you allow it. Enable HomeWave under
+       System Settings → Privacy &amp; Security → Screen &amp; System Audio Recording,
+       then retry.</p>
+    <button id="open-settings">Open System Settings</button>
+    <button id="retry-audio">Retry</button>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

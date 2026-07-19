@@ -1,0 +1,31 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #000; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: #eee; }
+#viz { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+.hidden { display: none !important; }
+
+.chip { position: fixed; top: 16px; left: 16px; display: flex; gap: 10px; align-items: center;
+  background: rgba(10, 10, 14, 0.72); padding: 10px 14px; border-radius: 12px;
+  backdrop-filter: blur(12px); }
+.chip img { width: 44px; height: 44px; border-radius: 8px; }
+#np-title { font-size: 14px; font-weight: 600; }
+#np-artist { font-size: 12px; opacity: 0.7; }
+
+#settings-toggle { position: fixed; top: 16px; right: 16px; width: 36px; height: 36px;
+  border-radius: 50%; border: none; background: rgba(10, 10, 14, 0.72); color: #eee;
+  font-size: 16px; cursor: pointer; }
+#settings-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 280px;
+  padding: 24px 20px; background: rgba(12, 12, 16, 0.92); backdrop-filter: blur(18px);
+  overflow-y: auto; }
+#settings-panel h2 { font-size: 15px; margin-bottom: 16px; }
+#settings-panel label { display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; margin-bottom: 14px; gap: 8px; }
+
+.overlay { position: fixed; inset: 0; display: flex; align-items: center;
+  justify-content: center; background: rgba(0, 0, 0, 0.75); }
+.overlay-card { max-width: 380px; padding: 28px; border-radius: 16px; background: #16161c;
+  text-align: center; }
+.overlay-card h1 { font-size: 18px; margin-bottom: 10px; }
+.overlay-card p { font-size: 13px; opacity: 0.8; margin-bottom: 18px; line-height: 1.5; }
+.overlay-card button { margin: 0 6px; padding: 8px 14px; border-radius: 8px; border: none;
+  cursor: pointer; background: #3b3b46; color: #fff; font-size: 13px; }
