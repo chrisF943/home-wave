@@ -99,8 +99,6 @@ A Swift/AppKit host does the work the web layer can't: it taps the system audio 
 | `web/js/palette.js` | Median-cut color extraction and theme crossfading |
 | `scripts/bundle.sh` | The build |
 
-Design notes and the implementation plan live in `docs/superpowers/`.
-
 ## Notes
 
 - The app is ad-hoc signed and not notarized — it's a personal build, not distributed.
