@@ -21,9 +21,17 @@ public final class SpectrumAnalyzer {
         vDSP_hann_window(&window, vDSP_Length(Self.fftSize), Int32(vDSP_HANN_NORM))
         let minHz: Float = 40, maxHz: Float = 16_000
         let binHz = sampleRate / Float(Self.fftSize)
+        // A 2048-point FFT resolves ~23 Hz per bin, but the bottom of a 64-band
+        // log sweep from 40 Hz steps by only ~4 Hz — so several bands used to
+        // floor onto the same bin and then move in perfect lockstep, reading as
+        // a clump of spokes stuck at one length. Force each edge at least one
+        // bin past the last so every band owns distinct spectrum.
+        let maxBin = Self.fftSize / 2 - 1
+        var previous = 0
         for i in 0...Self.bandCount {
             let hz = minHz * pow(maxHz / minHz, Float(i) / Float(Self.bandCount))
-            bandEdges.append(min(Self.fftSize / 2 - 1, max(1, Int(hz / binHz))))
+            previous = min(maxBin, max(previous + 1, min(maxBin, Int(hz / binHz))))
+            bandEdges.append(previous)
         }
     }
 
