@@ -63,7 +63,11 @@ public final class SpectrumAnalyzer {
             let lo = bandEdges[b], hi = max(lo + 1, bandEdges[b + 1])
             var sum: Float = 0
             for i in lo..<hi { sum += magnitudes[i] }
-            bands[b] = min(1, log10(1 + sum / Float(hi - lo)) / 3.5)
+            // Soft knee instead of a hard clamp: deep bass routinely drove the
+            // old min(1, ...) flat, freezing those spokes at full length. tanh
+            // approaches 1 without reaching it, so loud bands stay near the top
+            // of their range but keep moving.
+            bands[b] = tanh(log10(1 + sum / Float(hi - lo)) / 3.5 * 1.3)
         }
 
         // Beat: spectral flux over the low bands vs. its recent moving average.
