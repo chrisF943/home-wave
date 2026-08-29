@@ -36,9 +36,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "homewave")
-        // file:// pages need these to import ES modules and read canvas pixels.
+        // file:// pages need this to import ES modules. Deliberately NOT setting
+        // allowUniversalAccessFromFileURLs: it would let the page read every
+        // origin, and nothing here needs it — album art arrives as a data: URL,
+        // which is same-origin and so never taints the palette canvas.
         config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
-        config.setValue(true, forKey: "allowUniversalAccessFromFileURLs")
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
 
         webView = WKWebView(frame: window.contentView!.bounds, configuration: config)

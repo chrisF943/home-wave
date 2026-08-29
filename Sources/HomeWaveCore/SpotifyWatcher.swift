@@ -6,6 +6,7 @@ public final class SpotifyWatcher {
 
     private var lastTrackID = ""
     private var cachedArtDataURL: String?
+    private static let maxArtworkBytes = 8 * 1024 * 1024
 
     public init() {}
 
@@ -38,12 +39,21 @@ public final class SpotifyWatcher {
         var errorInfo: NSDictionary?
         guard let script = NSAppleScript(source: source),
               let urlString = script.executeAndReturnError(&errorInfo).stringValue,
-              let url = URL(string: urlString) else {
+              let url = URL(string: urlString),
+              // Only ever fetch artwork over https. URLSession will happily read
+              // file:// URLs, so any other scheme here would turn into a local
+              // file read that gets base64'd into the webview as an "image".
+              url.scheme == "https" else {
             completion(nil)
             return
         }
         URLSession.shared.dataTask(with: url) { data, _, _ in
-            let dataURL = data.map { "data:image/jpeg;base64," + $0.base64EncodedString() }
+            // Cover art is a few hundred KB; anything far larger isn't artwork,
+            // and base64 would inflate it another third on its way into JS.
+            var dataURL: String?
+            if let data, data.count <= SpotifyWatcher.maxArtworkBytes {
+                dataURL = "data:image/jpeg;base64," + data.base64EncodedString()
+            }
             DispatchQueue.main.async { completion(dataURL) }
         }.resume()
     }
