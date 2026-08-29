@@ -19,11 +19,13 @@ Turn it off and you get manual color pickers instead. Either way the visualizer 
 ## Build and run
 
 ```bash
+git clone https://github.com/<you>/HomeWave.git
+cd HomeWave
 bash scripts/bundle.sh      # compile, assemble HomeWave.app, sign it
 open build/HomeWave.app
 ```
 
-That's the whole build. Once built, you can launch it from Finder or the Dock like any other app — Terminal is only needed when the code changes.
+That's the whole build — no dependencies to install, no configuration. It takes about a minute on first run and the script checks your macOS version and toolchain up front, so if something's missing you'll hear about it immediately rather than after a failed compile. Once built, you can launch it from Finder or the Dock like any other app — Terminal is only needed when the code changes.
 
 On first launch macOS asks for two permissions:
 
@@ -103,3 +105,7 @@ A Swift/AppKit host does the work the web layer can't: it taps the system audio 
 
 - The app is ad-hoc signed and not notarized — it's a personal build, not distributed.
 - Moving the `.app` to a new location makes macOS ask for audio permission once more.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
