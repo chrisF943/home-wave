@@ -16,21 +16,52 @@ public final class SpotifyWatcher {
             object: nil, queue: .main) { [weak self] note in
             guard let self,
                   let info = SpotifyNotificationParser.parse(note.userInfo ?? [:]) else { return }
-            if !info.id.isEmpty, info.id != self.lastTrackID {
-                self.lastTrackID = info.id
-                self.cachedArtDataURL = nil
-                self.fetchArtwork { [weak self] dataURL in
-                    guard let self else { return }
-                    // A rapid skip can start a newer fetch before this one
-                    // returns — drop the stale result.
-                    guard info.id == self.lastTrackID else { return }
-                    self.cachedArtDataURL = dataURL
-                    self.onTrack?(info, dataURL)
-                }
-            } else {
-                self.onTrack?(info, self.cachedArtDataURL)
-            }
+            self.handle(info)
         }
+
+        // PlaybackStateChanged only fires on a *change*, so a track already
+        // playing when HomeWave launches would never reach the UI until the
+        // user paused or skipped. Seed from Spotify's current state instead.
+        // Async so a first-run Automation prompt cannot block the launch.
+        DispatchQueue.main.async { [weak self] in self?.seedFromCurrentTrack() }
+    }
+
+    private func handle(_ info: TrackInfo) {
+        if !info.id.isEmpty, info.id != lastTrackID {
+            lastTrackID = info.id
+            cachedArtDataURL = nil
+            fetchArtwork { [weak self] dataURL in
+                guard let self else { return }
+                // A rapid skip can start a newer fetch before this one
+                // returns — drop the stale result.
+                guard info.id == self.lastTrackID else { return }
+                self.cachedArtDataURL = dataURL
+                self.onTrack?(info, dataURL)
+            }
+        } else {
+            onTrack?(info, cachedArtDataURL)
+        }
+    }
+
+    /// Asks Spotify what is playing right now. Never launches Spotify: if it is
+    /// not already running there is nothing to show, and `tell application`
+    /// would start it.
+    private func seedFromCurrentTrack() {
+        guard !NSRunningApplication
+            .runningApplications(withBundleIdentifier: "com.spotify.client")
+            .isEmpty else { return }
+        let source = """
+        tell application "Spotify"
+            set t to current track
+            return (id of t) & "\\n" & (name of t) & "\\n" & (artist of t) \
+                 & "\\n" & (album of t) & "\\n" & (player state as string)
+        end tell
+        """
+        var errorInfo: NSDictionary?
+        guard let script = NSAppleScript(source: source),
+              let raw = script.executeAndReturnError(&errorInfo).stringValue,
+              let info = SpotifyNotificationParser.parseScriptOutput(raw) else { return }
+        handle(info)
     }
 
     private func fetchArtwork(completion: @escaping (String?) -> Void) {

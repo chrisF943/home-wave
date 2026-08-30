@@ -18,4 +18,18 @@ func runSpotifyParsingChecks() {
 
     check(SpotifyNotificationParser.parse(["Name": "x"]) == nil,
           "missing player state returns nil")
+
+    // AppleScript seed path used when a track is already playing at launch.
+    let seeded = SpotifyNotificationParser.parseScriptOutput(
+        "spotify:track:xyz\nSong\nArtist\nAlbum\nplaying")
+    check(seeded == TrackInfo(id: "spotify:track:xyz", title: "Song",
+                              artist: "Artist", album: "Album", playing: true),
+          "script output parsed")
+
+    check(SpotifyNotificationParser.parseScriptOutput(
+        "id\nSong\nArtist\nAlbum\npaused")?.playing == false,
+        "script paused state parsed")
+
+    check(SpotifyNotificationParser.parseScriptOutput("id\nSong\nArtist") == nil,
+          "truncated script output returns nil")
 }
