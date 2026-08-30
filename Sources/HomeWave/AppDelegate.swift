@@ -32,6 +32,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             backing: .buffered, defer: false)
         window.title = "HomeWave"
         window.titlebarAppearsTransparent = true
+        // The titlebar is transparent over a full-size content view, so AppKit
+        // drew the title straight onto the visualization — right where the
+        // now-playing chip sits. Keep window.title for the Dock and Window menu,
+        // just stop painting it over the content.
+        window.titleVisibility = .hidden
         window.collectionBehavior = [.fullScreenPrimary]
 
         let config = WKWebViewConfiguration()
