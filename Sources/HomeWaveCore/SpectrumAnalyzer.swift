@@ -14,6 +14,7 @@ public final class SpectrumAnalyzer {
     private var prevBands = [Float](repeating: 0, count: SpectrumAnalyzer.bandCount)
     private var fluxHistory = [Float](repeating: 0, count: 43) // ~0.7s at 60fps
     private var fluxIndex = 0
+    private var framesSinceBeat = 0
 
     public init(sampleRate: Float) {
         self.sampleRate = sampleRate
@@ -75,7 +76,15 @@ public final class SpectrumAnalyzer {
         for b in 0..<8 { flux += max(0, bands[b] - prevBands[b]) }
         prevBands = bands
         let avg = fluxHistory.reduce(0, +) / Float(fluxHistory.count)
-        let beat = flux > 0.08 && flux > avg * 1.6
+        // The old absolute floor (0.08) sat below the median flux of real music,
+        // so most frames cleared it and `beat` was near-permanently true — the
+        // ring pulse never decayed and particles streamed instead of bursting.
+        // Require a clear spike over the moving average, and enforce a refractory
+        // gap so one transient cannot retrigger on consecutive frames: 12 frames
+        // at 60 Hz caps the rate at 300 BPM, above any real tempo.
+        framesSinceBeat += 1
+        let beat = flux > 0.15 && flux > avg * 2.2 && framesSinceBeat >= 12
+        if beat { framesSinceBeat = 0 }
         fluxHistory[fluxIndex] = flux
         fluxIndex = (fluxIndex + 1) % fluxHistory.count
 
