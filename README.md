@@ -4,6 +4,8 @@ A macOS music visualizer that reacts to whatever audio your Mac is playing — a
 
 Four curated patterns, tweakable colors and motion, no browser tab and no menu-bar clutter. Just a window you can fullscreen and leave running.
 
+![HomeWave reacting to audio and recoloring itself to the album art on a track change](assets/homewave-demo.gif)
+
 ## The twist: Album-Art Chameleon
 
 When Spotify is playing, HomeWave picks up each track change instantly, pulls the album artwork, extracts its dominant colors, and crossfades the entire visualization — patterns, background, even the UI accents — to match. Skip to a different album and the whole app changes color with it.
