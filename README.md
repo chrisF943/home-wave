@@ -19,8 +19,8 @@ Turn it off and you get manual color pickers instead. Either way the visualizer 
 ## Build and run
 
 ```bash
-git clone https://github.com/<you>/HomeWave.git
-cd HomeWave
+git clone https://github.com/chrisF943/home-wave.git
+cd home-wave
 bash scripts/bundle.sh      # compile, assemble HomeWave.app, sign it
 open build/HomeWave.app
 ```
